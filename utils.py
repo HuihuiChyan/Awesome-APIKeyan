@@ -1,6 +1,6 @@
 import time
 import openai
-def get_response_turbo(messages, key="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", temp=1.0, stop="\n"):
+def get_response_turbo(messages, key=None, temp=1.0, stop="\n"):
 
     if key is not None:
         openai.api_key = key
@@ -19,7 +19,7 @@ def get_response_turbo(messages, key="sk-KXhGjnTicjQ16y54ogAET3BlbkFJdB56X0TKTOT
             FailCnt +=1
             if FailCnt >= 10:
                 print(f"The key {key} is failing!")
-                return "INVALID KEY!"
+                return "INVALID KEY"
             time.sleep(1)
             continue
         except openai.error.APIError:
@@ -36,7 +36,7 @@ def get_response_turbo(messages, key="sk-KXhGjnTicjQ16y54ogAET3BlbkFJdB56X0TKTOT
             FailCnt +=1
             if FailCnt >= 10:
                 print(f"The key {key} is failing!")
-                return "INVALID KEY!"
+                return "INVALID KEY"
             continue
         break
     
