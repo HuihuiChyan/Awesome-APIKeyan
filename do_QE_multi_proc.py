@@ -66,7 +66,7 @@ def init(c, a, t):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--api-key", type=str, default="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")
+    parser.add_argument("--api-key", type=str, required=True)
     parser.add_argument("--input-file", type=str, default="train.pe.detok")
     parser.add_argument("--output-file", type=str, default="train.pe.out05")
     parser.add_argument("--batch-size", type=int, default=1000)
