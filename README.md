@@ -33,24 +33,14 @@ conda activate apikeyan
 
 目前的程序都使用的是模型`text-chat-turbo`.
 
-运行如下的命令来执行单线程的机器翻译：
+运行如下的命令来执行机器翻译：
 ```shell
-python do_MT_multi_proc.py \
+python do_translation.py \
     --api-key your-api-key \
     --source-file ./path/to/your/input \
     --output-file ./path/to/your/result \
     --source-lang English \
-    --target-lang Chinese \
-```
-
-运行如下的命令来执行多线程的机器翻译：
-```shell
-python do_MT_mono_proc.py \
-    --api-key your-api-key \
-    --source-file ./path/to/your/input \
-    --output-file ./path/to/your/result \
-    --source-lang English \
-    --target-lang Chinese \
+    --target-lang Chinese
 ```
 
 ## 未来计划

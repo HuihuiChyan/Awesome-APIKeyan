@@ -8,6 +8,7 @@ class DataCollatorForNoiser:
 		self.mask_index = 27932 # for GPT2
 		self.LOWER_BOUND = 0
 		self.UPPER_BOUND = tokenizer.vocab_size - 1 #omit EOS for GPT2
+		self.mask_strategy = "mask_to_multi"
 
 	def word_starts(self, source):
 		is_word_start = torch.ones(source.size()).long()
@@ -32,6 +33,7 @@ class DataCollatorForNoiser:
 		].squeeze(1)
 
 		# 在num_to_mask个token中，取mask_random个用随机词做替换，其余的用mask做替换
+		print(num_to_mask)
 		mask_random = torch.FloatTensor(num_to_mask).uniform_() < random_ratio
 		source_length = source.size(0)
 		to_keep = torch.ones(source_length, dtype=torch.bool)
@@ -39,28 +41,28 @@ class DataCollatorForNoiser:
 			to_keep[indices] = 0
 		else:
 			# 在num_to_mask个token中，取mask_random个用随机词做替换，其余的用<MASK>做替换
-			# source[indices] = self.mask_index unused for GPT2
+			source[indices] = self.mask_index # unused for GPT2
 			source[indices[mask_random]] = torch.randint(
 				self.LOWER_BOUND, self.UPPER_BOUND, size=(mask_random.sum(),)
 			)
 
-		# 这个函数的意义在于，对于所有的non_word_start进行对应的mask
-		while indices.size(0) > 0:
-			uncompleted = is_word_start[indices + 1] == 0
-			indices = indices[uncompleted] + 1
-			mask_random = mask_random[uncompleted]
-			if replace_length != -1:
-				# delete token
-				# 如果replace_length不等于-1，那就对所有的non_word_start进行了删除
-				to_keep[indices] = 0
-			else:
-				# keep index, but replace it with [MASK]
-				source[indices] = self.mask_index
-				source[indices[mask_random]] = torch.randint(
-					self.LOWER_BOUND, self.UPPER_BOUND, size=(mask_random.sum(),)
-				)
+        # # 这个函数的意义在于，对于所有的non_word_start进行对应的mask
+		# while indices.size(0) > 0:
+		# 	uncompleted = is_word_start[indices + 1] == 0
+		# 	indices = indices[uncompleted] + 1
+		# 	mask_random = mask_random[uncompleted]
+		# 	if replace_length != -1:
+		# 		# delete token
+		# 		# 如果replace_length不等于-1，那就对所有的non_word_start进行了删除
+		# 		to_keep[indices] = 0
+		# 	else:
+		# 		# keep index, but replace it with [MASK]
+		# 		source[indices] = self.mask_index
+		# 		source[indices[mask_random]] = torch.randint(
+		# 			self.LOWER_BOUND, self.UPPER_BOUND, size=(mask_random.sum(),)
+		# 		)
 
-			assert source_length - 1 not in indices
+		# 	assert source_length - 1 not in indices
 
 		source = source[to_keep]
 
@@ -101,18 +103,19 @@ class DataCollatorForNoiser:
 		assert (result >= 0).all()
 		return result
 
-	def __call__(self, input_ids, mask_ratio=0.2, insert_ratio=0.1, delete_ratio=0.1, mask_random_ratio=1.0, insert_random_ratio=1.0):
+	def __call__(self, input_ids, mask_ratio=0.1, insert_ratio=0.0, delete_ratio=0.0, mask_random_ratio=0.0, insert_random_ratio=0.0):
 
 		targets = []
 		for source in input_ids:
+			target = torch.LongTensor(source)
 
 			if mask_ratio > 0:
-				if args.mask_strategy == "mask_to_multi":
+				if self.mask_strategy == "mask_to_multi":
 					replace_length = -1
 				else:
 					replace_length = 1
 
-				target = self.add_whole_word_mask(source, 
+				target = self.add_whole_word_mask(target, 
 												  mask_ratio=mask_ratio,
 												  random_ratio=mask_random_ratio,
 												  replace_length=replace_length)
@@ -135,7 +138,7 @@ class DataCollatorForNoiser:
 if __name__ == "__main__":
 	tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
 
-	texts = ["我是大傻逼", "我爱你"]
-	input_ids = [e["input_ids"] for e in tokenizer(texts)]
+	texts = ["这是一个测试。", "这是另外一个测试。"]
+	input_ids = tokenizer(texts)["input_ids"]
 	noiser = DataCollatorForNoiser(tokenizer)
-	import pdb;pdb.set_trace()
+	results = tokenizer.batch_decode(noiser(input_ids))
