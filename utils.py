@@ -1,6 +1,6 @@
 import time
 import openai
-def get_response_turbo(messages, key=None, temp=1.0, stop="\n"):
+def get_response_turbo(messages, key=None, temp=0.5, stop="\n"):
 
     if key is not None:
         openai.api_key = key
