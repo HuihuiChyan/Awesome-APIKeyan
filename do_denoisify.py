@@ -11,11 +11,16 @@ import openai
 import argparse
 import multiprocessing
 from utils import get_response_turbo
+from utils_noiser import DataCollatorForNoiser
 
 def create_noised_text(text, key=None):
 
-    input_line = f"请对句子'{text}'注入噪音，得到一句语义发生偏差、不通顺，但是长度与原本的句子一样的句子:"
-    messages = [{"role": "user", "content": input_line}]
+    text, noised_text = text.split(" ||| ")
+
+    demo = "请把'经常能在几百码开外<MASK>英国<MASK><MASK><MASK>。'中的<MASK>补全，生成一句通顺、流畅的中文句子:经常能在几百码开外射杀英国皇家海军的舰船。\n请把'最后<MASK><MASK>征服者<MASK>举着剑<MASK>。'中的<MASK>补全，生成一句通顺、流畅的中文句子:最后胜利的征服者随后举着剑前进。\n"
+
+    input_line = f"请把'{noised_text}'中的<MASK>补全，生成一句通顺、流畅的中文句子:"
+    messages = [{"role": "user", "content": demo+input_line}]
 
     if key is None:
         key = api_key
@@ -28,43 +33,58 @@ def create_noised_text(text, key=None):
         if result == "":
             print("Exceptional line with empty output! Retrying!")
             continue
-        if len(text.split()) / len(result.split()) > 1.25:
+        if "<MASK>" in result:
+            print("Exceptional line with <MASK> in the output! Retrying!")
+            print(f"The input is: {input_line}")
+            continue
+        if result[0] == '"' and result[-1] == '"':
+            result = result[1:-1]
+        if result[0] == "'" and result[-1] == "'":
+            result = result[1:-1]
+        if result[0] == "“" and result[-1] == "”":
+            result = result[1:-1]
+
+        if len(result) / len(text.replace(" ", "")) > 1.25:
             print("Too long! Retrying!")
+            # print(f"The input is: {input_line}")
+            # print(f"The output is: {result}")
             FailCnt += 1
-            if FailCnt >= 10:
-                print(f"Too many failures! Input is {text}")
+            if FailCnt >= 5:
+                print(f"Too many failures! Input is {input_line}")
                 break
             continue
-        if len(text.split()) / len(result.split()) < 0.8:
+        if len(result) / len(text.replace(" ", "")) < 0.8:
             print("Too short! Retrying!")
+            # print(f"The input is: {input_line}")
+            # print(f"The output is: {result}")
             FailCnt += 1
-            if FailCnt >= 10:
-                print(f"Too many failures! Input is {text}")
+            if FailCnt >= 5:
+                print(f"Too many failures! Input is {input_line}")
                 break
             continue
         break
-    if result[0] == '"' and result[-1] == '"':
-        result = result[1:-1]
-    if result[0] == "'" and result[-1] == "'":
-        result = result[1:-1]
+
     counter.value += 1
     if counter.value % 10 == 0:
         avg_time = round((time.time()-start_time) / counter.value, 2)
         print(f"{counter.value} lines finished! {avg_time} seconds per line on average.")
         print(f"Sampled input: {text}")
+        print(f"Sampled noised: {noised_text}")
         print(f"Sampled output: {result}")
     return result
 
-def create_noised_text_wrapper(text):
+def create_noised_text_wrapper(text, key=None):
     results = []
-    for i in range(24):
-        results.append(create_noised_text(text))
+    lines = text.split(" |||| ")
+    for line in lines:
+        results.append(create_noised_text(line, key=key))
     return results
 
 def init(c, a, t):
     global counter
     global api_key
     global start_time
+    global noiser
     counter = c
     api_key = a
     start_time = t
@@ -90,18 +110,31 @@ if __name__ == "__main__":
             len_output_lines = len(output_lines)
     else:
         len_output_lines = 0
-    
-    tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
-    import pdb;pdb.set_trace()
 
     fin = open(args.input_file, "r", encoding="utf-8")
     fout = open(args.output_file, "a+", encoding="utf-8")
     input_lines = [line.strip() for line in fin.readlines()][len_output_lines:]
 
+    import jieba_fast
+    noiser = DataCollatorForNoiser(tokenizer=jieba_fast.lcut)
+    
+    new_input_lines = []
+    for line in tqdm.tqdm(input_lines, desc="Adding <MASK>"):
+        temp_line = []
+        for i in range(24):
+            mask_ratio = random.choice([0.1, 0.2, 0.3])
+            delete_ratio = random.choice([0.0, 0.1, 0.2])
+            insert_ratio = delete_ratio + 0.05
+            temp_line.append(line+" ||| "+noiser(line, mask_ratio, insert_ratio, delete_ratio))
+        new_input_lines.append(" |||| ".join(temp_line))
+    
+    input_lines = new_input_lines
+
+    manager = multiprocessing.Manager()
+    counter = manager.Value("counter", 0)
+    pool = multiprocessing.Pool(args.pool_number, initializer=init, initargs=(counter, args.api_key, start_time))
+
     if args.multi_process:
-        manager = multiprocessing.Manager()
-        counter = manager.Value("counter", 0)
-        pool = multiprocessing.Pool(args.pool_number, initializer=init, initargs=(counter, args.api_key, start_time))
         with open(args.output_file, "a", encoding="utf-8") as fout:
             counter = manager.Value("counter", 0)
             batched_lines = []
@@ -121,5 +154,5 @@ if __name__ == "__main__":
     else:
         with open(args.output_file, "a", encoding="utf-8") as fout:
             for line in tqdm.tqdm(input_lines):
-                result = create_noised_text_wrapper(line)
+                result = create_noised_text_wrapper(line, key=args.api_key)
                 fout.write(" ||| ".join(result)+"\n")

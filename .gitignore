@@ -1,5 +1,4 @@
 __pycache__
 data/
-all-keys*
-infer*.sh
-translate.sh
+chat_data/
+*.sh

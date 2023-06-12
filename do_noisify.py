@@ -22,7 +22,7 @@ def create_noised_text(text, key=None):
 
     FailCnt = 0
     while(True):
-        result = get_response_turbo(messages, key=key)
+        result = get_response_turbo(messages, key=key, temp=1.2)
         if result == "INVALID KEY":
             raise Exception(f"The key {api_key} is invalid. It may run out of quota.")
         if result == "":
@@ -31,14 +31,14 @@ def create_noised_text(text, key=None):
         if len(text.split()) / len(result.split()) > 1.25:
             print("Too long! Retrying!")
             FailCnt += 1
-            if FailCnt >= 10:
+            if FailCnt >= 5:
                 print(f"Too many failures! Input is {text}")
                 break
             continue
         if len(text.split()) / len(result.split()) < 0.8:
             print("Too short! Retrying!")
             FailCnt += 1
-            if FailCnt >= 10:
+            if FailCnt >= 5:
                 print(f"Too many failures! Input is {text}")
                 break
             continue
