@@ -1,5 +1,8 @@
 __pycache__
-data/
+DoubanConversationCorpus/
+trash-bin/
 chat_data/
 chat_data_v2/
+chat_data_v3/
+qe_data/
 *.sh

@@ -14,7 +14,8 @@ from utils import get_response_turbo
 
 def create_noised_text(text, key=None):
 
-    input_line = f"请对句子'{text}'注入噪音，得到一句语义发生偏差、不通顺，但是长度与原本的句子一样的句子:"
+    input_line = f"Please follow the steps below to noisify the input sequence.\n 1. Randomly corrput some tokens from the input sequence;\n 2. Restore the corrupted sequence and generate a smooth sentence;\n Please output the final sentence directly, and make sure the output sentence is the same length with the input sequence:\nInput seqneuce: {text}\nOutput sentence:"
+    # input_line = f"请按照以下步骤，对输入的句子注入噪音，得到一句语义发生偏差、不通顺，但是长度与原本的句子一样的句子:\n1.随机地掩盖、替换输入序列中的一些词;\n2.将掩盖、替换后的序列恢复为一句流畅的句子;\n请直接输出最终结果:\n输入序列:{text}\n输出句子:"
     messages = [{"role": "user", "content": input_line}]
 
     if key is None:
@@ -47,18 +48,18 @@ def create_noised_text(text, key=None):
         result = result[1:-1]
     if result[0] == "'" and result[-1] == "'":
         result = result[1:-1]
-    counter.value += 1
-    if counter.value % 10 == 0:
-        avg_time = round((time.time()-start_time) / counter.value, 2)
-        print(f"{counter.value} lines finished! {avg_time} seconds per line on average.")
-        print(f"Sampled input: {text}")
-        print(f"Sampled output: {result}")
+    # counter.value += 1
+    # if counter.value % 10 == 0:
+    #     avg_time = round((time.time()-start_time) / counter.value, 2)
+    #     print(f"{counter.value} lines finished! {avg_time} seconds per line on average.")
+    #     print(f"Sampled input: {text}")
+    #     print(f"Sampled output: {result}")
     return result
 
-def create_noised_text_wrapper(text):
+def create_noised_text_wrapper(text, key=None):
     results = []
-    for i in range(24):
-        results.append(create_noised_text(text))
+    for i in range(2):
+        results.append(create_noised_text(text, key=key))
     return results
 
 def init(c, a, t):
@@ -118,5 +119,5 @@ if __name__ == "__main__":
     else:
         with open(args.output_file, "a", encoding="utf-8") as fout:
             for line in tqdm.tqdm(input_lines):
-                result = create_noised_text_wrapper(line)
+                result = create_noised_text_wrapper(line, key=args.api_key)
                 fout.write(" ||| ".join(result)+"\n")

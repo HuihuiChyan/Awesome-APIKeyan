@@ -23,15 +23,7 @@
 - transformers 4.29.1
 - sacremoses 0.0.53
 
-建议使用conda来创建独立的环境.
-```shell
-conda create -n apikeyan python=3.10 -y
-conda activate apikeyan
-```
-
 ## 程序运行
-
-目前的程序都使用的是模型`text-chat-turbo`.
 
 运行如下的命令来执行机器翻译：
 ```shell
@@ -43,10 +35,20 @@ python do_translation.py \
     --target-lang Chinese
 ```
 
+## 脚本说明
+--do_denoisify.py 用于给平行语料加噪，用来训练QE系统
+--do_evaluate_chatbot.py 用于评估对话系统的输出
+--do_multichat_rewrite.py 用于自动产生风格化对话数据
+--do_multichat_seed.py 用于自动产生风格化对话数据
+--do_noisify.py 用于给平行语料加噪，用来训练QE系统
+--utils_noiser.py 用于给平行语料加噪时，在平行语料中进行插入、删除等破坏
+--utils.py 工具函数，包含了调用turbo、gpt4等的函数
+
 ## 未来计划
 
-- [ ] 添加davinci系列模型的调用脚本
-- [ ] 添加对话生成的脚本
+- [✅] 添加gpt4模型的调用脚本
+- [✅] 添加对话生成的脚本
+- [ ] 添加davinci模型的调用脚本
 
 ## 致谢
 
