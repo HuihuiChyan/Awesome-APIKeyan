@@ -36,13 +36,19 @@ python do_translation.py \
 ```
 
 ## 脚本说明
---do_denoisify.py 用于给平行语料加噪，用来训练QE系统
---do_evaluate_chatbot.py 用于评估对话系统的输出
---do_multichat_rewrite.py 用于自动产生风格化对话数据
---do_multichat_seed.py 用于自动产生风格化对话数据
---do_noisify.py 用于给平行语料加噪，用来训练QE系统
---utils_noiser.py 用于给平行语料加噪时，在平行语料中进行插入、删除等破坏
---utils.py 工具函数，包含了调用turbo、gpt4等的函数
+- do_denoisify.py 用于给平行语料加噪，用来训练QE系统
+
+- do_evaluate_chatbot.py 用于评估对话系统的输出
+
+- do_multichat_rewrite.py 用于自动产生风格化对话数据
+
+- do_multichat_seed.py 用于自动产生风格化对话数据
+
+- do_noisify.py 用于给平行语料加噪，用来训练QE系统
+
+- utils_noiser.py 用于给平行语料加噪时，在平行语料中进行插入、删除等破坏
+
+- utils.py 工具函数，包含了调用turbo、gpt4等的函数
 
 ## 未来计划
 
